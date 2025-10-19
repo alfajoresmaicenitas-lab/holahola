@@ -1,0 +1,1699 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generador de Pintar por Números</title>
+<style>
+:root {
+  color-scheme: light;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: #f5f5f7;
+  color: #1f1f24;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 0;
+  background: #f5f5f7;
+  color: #1f1f24;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+header {
+  padding: 1.5rem 2rem 1rem;
+  border-bottom: 1px solid #d0d0d8;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(31,31,36,0.06);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(320px, 440px) 1fr;
+  gap: 1.5rem;
+  padding: 1.5rem 2rem 2rem;
+}
+@media (max-width: 1100px) {
+  main {
+    grid-template-columns: 1fr;
+  }
+  header {
+    position: static;
+  }
+}
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.card {
+  background: #ffffff;
+  border: 1px solid #d7d7df;
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 8px 24px rgba(31,31,36,0.04);
+}
+.card h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.card p.desc {
+  margin: 0 0 1rem;
+  color: #4f4f58;
+  font-size: 0.9rem;
+}
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: none;
+  border-radius: 999px;
+  padding: 0.85rem 1.6rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  text-decoration: none;
+}
+.button:disabled {
+  cursor: not-allowed;
+  background: #b5bfd3;
+  box-shadow: none;
+}
+.button:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(37,99,235,0.24);
+}
+.secondary {
+  background: #eef1f8;
+  color: #1d2a44;
+}
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.input-row label {
+  flex: 1 0 120px;
+  font-weight: 500;
+}
+.input-row input[type="number"],
+.input-row input[type="text"] {
+  flex: 1;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #c6cad8;
+  border-radius: 12px;
+  font-size: 1rem;
+}
+.slider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+}
+.slider-row label {
+  font-weight: 500;
+}
+.slider-row .hint {
+  font-size: 0.8rem;
+  color: #5d6274;
+}
+.slider-row input[type="range"] {
+  width: 100%;
+}
+.drop-zone {
+  border: 2px dashed #9ea6bc;
+  border-radius: 18px;
+  padding: 1.5rem;
+  text-align: center;
+  background: #f8f9fc;
+  transition: border-color 0.2s ease, background 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  position: relative;
+}
+.drop-zone.dragover {
+  border-color: #2563eb;
+  background: #e9f0ff;
+}
+.drop-zone p {
+  margin: 0;
+}
+.drop-zone .instructions {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #283252;
+}
+.drop-zone label.button {
+  cursor: pointer;
+}
+.drop-zone input[type="file"] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0.1px;
+  height: 0.1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.preview-thumb {
+  max-width: 160px;
+  max-height: 120px;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  border: 1px solid rgba(0,0,0,0.08);
+  object-fit: contain;
+  display: none;
+}
+.preview-thumb.visible {
+  display: block;
+}
+.meta {
+  font-size: 0.85rem;
+  color: #53586a;
+}
+.preview-wrapper {
+  background: #ffffff;
+  border: 1px solid #d7d7df;
+  border-radius: 20px;
+  padding: 1rem;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.5);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.preview-wrapper header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: none;
+  box-shadow: none;
+  padding: 0;
+  margin-bottom: 0.75rem;
+  background: transparent;
+}
+canvas#previewCanvas {
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;
+  background: repeating-conic-gradient(#f7f7fa 0deg 45deg, #fdfdff 45deg 90deg);
+}
+status {
+.status {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: #4f5568;
+}
+.error {
+  color: #c0392b;
+  font-weight: 600;
+}
+.small-text {
+  font-size: 0.82rem;
+  color: #545b6a;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem 0.9rem;
+}
+.form-grid label {
+  font-weight: 500;
+}
+.form-grid input {
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #c6cad8;
+  border-radius: 12px;
+  font-size: 0.95rem;
+}
+.range-value {
+  font-size: 0.85rem;
+  color: #384055;
+  font-weight: 600;
+}
+.tooltip {
+  border-bottom: 1px dotted #7b8192;
+  cursor: help;
+}
+.palette-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+.palette-item {
+  border-radius: 12px;
+  border: 1px solid #d7d7df;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  background: #fcfcfe;
+}
+.palette-swatch {
+  width: 100%;
+  aspect-ratio: 1/1;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,0.08);
+}
+.palette-label {
+  font-size: 0.78rem;
+  color: #303548;
+  font-weight: 600;
+}
+kbd {
+  display: inline-block;
+  padding: 0.15rem 0.35rem;
+  border-radius: 6px;
+  border: 1px solid #c3c7d7;
+  background: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 500;
+  box-shadow: inset 0 -1px 0 rgba(0,0,0,0.08);
+}
+footer {
+  padding: 1rem 2rem 2rem;
+  font-size: 0.78rem;
+  color: #70768a;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Generador de Pintar por Números</h1>
+  <p class="small-text">Convierte una imagen en una lámina lista para imprimir y colorear por zonas numeradas.</p>
+</header>
+<main>
+  <section class="panel">
+    <div class="card" id="imageCard">
+      <h2>Imagen</h2>
+      <p class="desc">Sube, arrastra o pegá una imagen JPG, PNG o WEBP. Funciona incluso en entornos embebidos.</p>
+      <div class="drop-zone" id="dropZone">
+        <p class="instructions">Soltá una imagen aquí o subila</p>
+        <label class="button secondary" id="selectImage" for="fileInput">Subir imagen</label>
+        <input type="file" accept="image/png,image/jpeg,image/webp" id="fileInput">
+        <p class="meta" id="imageInfo">Sin imagen cargada.</p>
+        <img id="imagePreview" class="preview-thumb" alt="Vista previa de la imagen" />
+      </div>
+    </div>
+    <div class="card">
+      <h2>Ajustes</h2>
+      <div class="slider-row">
+        <label for="detailSlider">Nivel de detalle <span class="tooltip" title="Más detalle = más colores y líneas">&#9432;</span></label>
+        <input type="range" id="detailSlider" min="0" max="100" value="55">
+        <div class="range-value" id="detailValue">Detalle: 55</div>
+      </div>
+      <div class="slider-row">
+        <label for="thicknessSlider">Grosor de contorno (pt)</label>
+        <input type="range" id="thicknessSlider" min="25" max="300" value="80">
+        <div class="range-value" id="thicknessValue">0.80 pt</div>
+      </div>
+      <div class="slider-row">
+        <label for="strokeGray">Color del contorno</label>
+        <input type="range" id="strokeGray" min="0" max="100" value="80">
+        <div class="range-value" id="strokeGrayValue">Gris 80%</div>
+      </div>
+      <div class="input-row">
+        <label for="strokeHex">Color HEX</label>
+        <input type="text" id="strokeHex" value="#555555" maxlength="7">
+      </div>
+      <div class="slider-row">
+        <label for="fontSizeInput">Tamaño de número (pt)</label>
+        <input type="range" id="fontSizeInput" min="16" max="40" value="22">
+        <div class="range-value" id="fontSizeValue">2.20 pt</div>
+      </div>
+      <div class="palette-preview" id="palettePreview" aria-live="polite"></div>
+    </div>
+    <div class="card">
+      <h2>Exportar</h2>
+      <div class="form-grid">
+        <label for="widthCm">Ancho (cm)</label>
+        <input type="number" id="widthCm" min="5" max="200" step="0.1" value="21">
+        <label for="heightCm">Alto (cm)</label>
+        <input type="number" id="heightCm" min="5" max="200" step="0.1" value="29.7">
+        <label for="marginTop">Margen arriba (cm)</label>
+        <input type="number" id="marginTop" min="0" max="20" step="0.1" value="1.5">
+        <label for="marginRight">Margen derecha (cm)</label>
+        <input type="number" id="marginRight" min="0" max="20" step="0.1" value="1.5">
+        <label for="marginBottom">Margen abajo (cm)</label>
+        <input type="number" id="marginBottom" min="0" max="20" step="0.1" value="1.5">
+        <label for="marginLeft">Margen izquierda (cm)</label>
+        <input type="number" id="marginLeft" min="0" max="20" step="0.1" value="1.5">
+        <label for="dpiInput">Resolución (DPI)</label>
+        <input type="number" id="dpiInput" min="72" max="1200" step="1" value="300">
+      </div>
+      <div class="status" id="exportStatus">Exportación disponible al procesar una imagen.</div>
+      <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:1rem;">
+        <button class="button" id="exportSvg" disabled>Exportar imagen (SVG)</button>
+        <button class="button" id="exportPng" disabled>Exportar imagen (PNG)</button>
+        <button class="button secondary" id="exportPalettePdf" disabled>Exportar paleta (PDF)</button>
+        <button class="button secondary" id="exportPaletteSvg" disabled>Exportar paleta (SVG)</button>
+      </div>
+    </div>
+    <div class="card small-text">
+      <strong>Atajos:</strong> <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>S</kbd> guarda la imagen, <kbd>R</kbd> reprocesa con los ajustes actuales.
+    </div>
+  </section>
+  <section class="preview-wrapper">
+    <header>
+      <h2 style="margin:0;font-size:1.05rem;font-weight:600;">Vista previa</h2>
+      <div id="previewMeta" class="meta">Sin datos.</div>
+    </header>
+    <canvas id="previewCanvas"></canvas>
+    <div class="status" id="statusText"></div>
+  </section>
+</main>
+<footer>
+  Funciona 100% offline. No se envía ninguna imagen fuera de tu equipo.
+</footer>
+<script>
+(function(){
+  const state = {
+    image: null,
+    originalWidth: 0,
+    originalHeight: 0,
+    scaledWidth: 0,
+    scaledHeight: 0,
+    imageData: null,
+    processing: false,
+    processed: null,
+    lastExportFormat: 'svg'
+  };
+
+  const elements = {
+    fileInput: document.getElementById('fileInput'),
+    selectImage: document.getElementById('selectImage'),
+    dropZone: document.getElementById('dropZone'),
+    imageInfo: document.getElementById('imageInfo'),
+    imagePreview: document.getElementById('imagePreview'),
+    detailSlider: document.getElementById('detailSlider'),
+    detailValue: document.getElementById('detailValue'),
+    thicknessSlider: document.getElementById('thicknessSlider'),
+    thicknessValue: document.getElementById('thicknessValue'),
+    strokeGray: document.getElementById('strokeGray'),
+    strokeGrayValue: document.getElementById('strokeGrayValue'),
+    strokeHex: document.getElementById('strokeHex'),
+    fontSizeInput: document.getElementById('fontSizeInput'),
+    fontSizeValue: document.getElementById('fontSizeValue'),
+    widthCm: document.getElementById('widthCm'),
+    heightCm: document.getElementById('heightCm'),
+    marginTop: document.getElementById('marginTop'),
+    marginRight: document.getElementById('marginRight'),
+    marginBottom: document.getElementById('marginBottom'),
+    marginLeft: document.getElementById('marginLeft'),
+    dpiInput: document.getElementById('dpiInput'),
+    exportSvg: document.getElementById('exportSvg'),
+    exportPng: document.getElementById('exportPng'),
+    exportPalettePdf: document.getElementById('exportPalettePdf'),
+    exportPaletteSvg: document.getElementById('exportPaletteSvg'),
+    statusText: document.getElementById('statusText'),
+    previewCanvas: document.getElementById('previewCanvas'),
+    previewMeta: document.getElementById('previewMeta'),
+    exportStatus: document.getElementById('exportStatus'),
+    palettePreview: document.getElementById('palettePreview')
+  };
+
+  const offscreen = document.createElement('canvas');
+  const offctx = offscreen.getContext('2d');
+  const previewCtx = elements.previewCanvas.getContext('2d');
+
+  const worker = createWorker();
+
+  const ACCEPTED_REGEX = /^image\/(png|jpeg|webp)$/i;
+
+  function normalizeFiles(input) {
+    if (!input) return [];
+    if (input instanceof FileList) return Array.from(input);
+    if (Array.isArray(input)) return input.filter(Boolean);
+    if (input instanceof File) return [input];
+    if (typeof input === 'object' && typeof input.length === 'number') {
+      try { return Array.from(input); } catch (err) { return []; }
+    }
+    return [];
+  }
+
+  function isAcceptedFile(file) {
+    if (!file) return false;
+    if (ACCEPTED_REGEX.test(file.type)) return true;
+    if (!file.type && file.name) {
+      return /\.(png|jpe?g|webp)$/i.test(file.name);
+    }
+    return false;
+  }
+
+  function formatBytes(bytes) {
+    if (!Number.isFinite(bytes)) return '';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let value = bytes;
+    let unit = 0;
+    while (value >= 1024 && unit < units.length - 1) {
+      value /= 1024;
+      unit++;
+    }
+    const decimals = value < 10 && unit > 0 ? 1 : 0;
+    return value.toFixed(decimals) + ' ' + units[unit];
+  }
+
+  function showPreviewThumb(src, file) {
+    if (!src) {
+      elements.imagePreview.classList.remove('visible');
+      elements.imagePreview.removeAttribute('src');
+      elements.imagePreview.alt = 'Vista previa de la imagen';
+      return;
+    }
+    elements.imagePreview.src = src;
+    elements.imagePreview.classList.add('visible');
+    elements.imagePreview.alt = file && file.name ? 'Vista previa de ' + file.name : 'Vista previa de la imagen';
+  }
+
+  function updateImageInfoText(file, dimensionsText) {
+    if (!file) {
+      elements.imageInfo.textContent = 'Sin imagen cargada.';
+      return;
+    }
+    const parts = [];
+    if (file.name) parts.push(file.name);
+    if (Number.isFinite(file.size)) parts.push(formatBytes(file.size));
+    if (dimensionsText) parts.push(dimensionsText);
+    elements.imageInfo.textContent = parts.join(' • ');
+  }
+
+  function fallbackPreview(file) {
+    const reader = new FileReader();
+    reader.onload = function(){
+      showPreviewThumb(reader.result, file);
+      updateImageInfoText(file);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function dispatchIncomingFiles(list) {
+    const files = normalizeFiles(list);
+    if (!files.length) return;
+    const valid = files.filter(isAcceptedFile);
+    console.log('files:selected', { count: valid.length, types: valid.map(function(file){ return file.type || (file.name || '').split('.').pop(); }) });
+    if (!valid.length) {
+      setStatus('Formato no soportado. Usa JPG, PNG o WEBP.', true);
+      showPreviewThumb(null);
+      updateImageInfoText(null);
+      return;
+    }
+    if (typeof window.handleFiles === 'function') {
+      window.handleFiles(valid);
+    } else {
+      fallbackPreview(valid[0]);
+    }
+  }
+
+  function createWorker(){
+    const workerCode = `self.addEventListener('message', (event) => {
+      const data = event.data;
+      if (!data || data.type !== 'process') {
+        return;
+      }
+      try {
+        const start = performance.now();
+        const result = processImage(data.payload);
+        const elapsed = Math.round(performance.now() - start);
+        self.postMessage({ type: 'result', payload: { ...result, elapsed }});
+      } catch (error) {
+        const message = error && error.message ? error.message : 'Error en el procesamiento';
+        self.postMessage({ type: 'error', payload: { message } });
+      }
+    });
+
+    function processImage(payload) {
+      const { width, height, rgba, options } = payload;
+      const labData = toLabArray(rgba);
+      const detail = options.detail;
+      const { colorCount, mergeDelta, simplifyTolerance } = deriveParameters(detail);
+      const { clusters, assignments } = quantize(labData, colorCount, width, height);
+      const merged = mergeClusters(clusters, assignments, labData, mergeDelta);
+      const palette = merged.clusters;
+      const labels = merged.assignments;
+      const regions = buildRegions(labels, palette, width, height);
+      const simplified = simplifyRegions(regions, simplifyTolerance);
+      return {
+        palette: palette.map((c, idx) => ({ index: idx + 1, rgb: c.rgb, lab: c.lab })),
+        regions: simplified.regions,
+        contours: simplified.contours,
+        numbers: simplified.numbers,
+        stats: {
+          width,
+          height,
+          colors: palette.length,
+          regions: simplified.regions.length
+        }
+      };
+    }
+
+    function toLabArray(rgba) {
+      const lab = new Float32Array((rgba.length / 4) * 3);
+      for (let i = 0, j = 0; i < rgba.length; i += 4, j += 3) {
+        const r = rgba[i] / 255;
+        const g = rgba[i + 1] / 255;
+        const b = rgba[i + 2] / 255;
+        const labColor = rgbToLab(r, g, b);
+        lab[j] = labColor[0];
+        lab[j + 1] = labColor[1];
+        lab[j + 2] = labColor[2];
+      }
+      return lab;
+    }
+
+    function deriveParameters(detail) {
+      const t = detail / 100;
+      const colorCount = Math.round(4 + t * 44);
+      const mergeDelta = 4 + (1 - t) * 18;
+      const simplifyTolerance = 0.8 + (1 - t) * 2.4;
+      return { colorCount, mergeDelta, simplifyTolerance };
+    }
+
+    function quantize(labData, colorCount, width, height) {
+      const totalPixels = width * height;
+      const sampleSize = Math.min(4000, totalPixels);
+      const indices = new Uint32Array(sampleSize);
+      for (let i = 0; i < sampleSize; i++) {
+        indices[i] = Math.floor(Math.random() * totalPixels);
+      }
+      const samples = new Float32Array(sampleSize * 3);
+      for (let i = 0; i < sampleSize; i++) {
+        const idx = indices[i] * 3;
+        samples[i * 3] = labData[idx];
+        samples[i * 3 + 1] = labData[idx + 1];
+        samples[i * 3 + 2] = labData[idx + 2];
+      }
+      const k = Math.min(colorCount, sampleSize);
+      const centroids = initKMeansPlus(samples, k);
+      const sampleAssignments = new Uint16Array(sampleSize);
+      runKMeans(samples, centroids, sampleAssignments, 12);
+      const assignments = new Uint16Array(totalPixels);
+      assignAll(labData, centroids, assignments);
+      return { clusters: finalizeCentroids(labData, assignments, centroids.length / 3), assignments };
+    }
+
+    function mergeClusters(clusters, assignments, labData, threshold) {
+      const k = clusters.length;
+      const parents = new Array(k);
+      for (let i = 0; i < k; i++) parents[i] = i;
+      function find(a){ return parents[a] === a ? a : (parents[a] = find(parents[a])); }
+      function unite(a,b){
+        const ra = find(a), rb = find(b);
+        if (ra === rb) return;
+        parents[rb] = ra;
+      }
+      for (let i = 0; i < k; i++) {
+        for (let j = i + 1; j < k; j++) {
+          const delta = deltaE(clusters[i].lab, clusters[j].lab);
+          if (delta < threshold) {
+            unite(i,j);
+          }
+        }
+      }
+      const remap = new Map();
+      const newClusters = [];
+      for (let i = 0; i < k; i++) {
+        const root = find(i);
+        if (!remap.has(root)) {
+          const cluster = { count:0, lab:[0,0,0], rgb:[0,0,0] };
+          remap.set(root, newClusters.length);
+          newClusters.push(cluster);
+        }
+        const target = newClusters[remap.get(root)];
+        target.lab[0] += clusters[i].lab[0] * clusters[i].count;
+        target.lab[1] += clusters[i].lab[1] * clusters[i].count;
+        target.lab[2] += clusters[i].lab[2] * clusters[i].count;
+        target.rgb[0] += clusters[i].rgb[0] * clusters[i].count;
+        target.rgb[1] += clusters[i].rgb[1] * clusters[i].count;
+        target.rgb[2] += clusters[i].rgb[2] * clusters[i].count;
+        target.count += clusters[i].count;
+      }
+      for (const cluster of newClusters) {
+        cluster.lab[0] /= cluster.count;
+        cluster.lab[1] /= cluster.count;
+        cluster.lab[2] /= cluster.count;
+        cluster.rgb[0] = Math.round(cluster.rgb[0] / cluster.count);
+        cluster.rgb[1] = Math.round(cluster.rgb[1] / cluster.count);
+        cluster.rgb[2] = Math.round(cluster.rgb[2] / cluster.count);
+      }
+      const newAssignments = new Uint16Array(assignments.length);
+      for (let i = 0; i < assignments.length; i++) {
+        const root = find(assignments[i]);
+        newAssignments[i] = remap.get(root);
+      }
+      return { clusters: newClusters.map(c => ({ lab: c.lab.slice(), rgb: c.rgb.slice(), count: c.count })), assignments: newAssignments };
+    }
+
+    function buildRegions(labels, palette, width, height) {
+      const total = width * height;
+      const regionIdMap = new Int32Array(total);
+      regionIdMap.fill(-1);
+      const regions = [];
+      const queue = [];
+      const offsets = [1, -1, width, -width];
+      const visited = new Uint8Array(total);
+      for (let idx = 0; idx < total; idx++) {
+        if (visited[idx]) continue;
+        const label = labels[idx];
+        const regionIndex = regions.length;
+        const region = { label, pixels: [], bbox:[Infinity,Infinity,-Infinity,-Infinity] };
+        queue.length = 0;
+        queue.push(idx);
+        visited[idx] = 1;
+        while (queue.length) {
+          const current = queue.pop();
+          region.pixels.push(current);
+          const x = current % width;
+          const y = (current / width) | 0;
+          if (x < region.bbox[0]) region.bbox[0] = x;
+          if (y < region.bbox[1]) region.bbox[1] = y;
+          if (x > region.bbox[2]) region.bbox[2] = x;
+          if (y > region.bbox[3]) region.bbox[3] = y;
+          for (const off of offsets) {
+            const n = current + off;
+            if (n < 0 || n >= total) continue;
+            if (off === 1 && x === width - 1) continue;
+            if (off === -1 && x === 0) continue;
+            if (off === width && y === height - 1) continue;
+            if (off === -width && y === 0) continue;
+            if (visited[n]) continue;
+            if (labels[n] !== label) continue;
+            visited[n] = 1;
+            queue.push(n);
+          }
+        }
+        regions.push(region);
+      }
+      const contours = [];
+      const numbers = [];
+      for (const region of regions) {
+        const contour = buildContour(region, labels, width, height);
+        const metrics = computeCentroid(region, width, height);
+        contours.push({ label: region.label, paths: contour });
+        numbers.push({ label: region.label, position: metrics.centroid, area: metrics.area });
+      }
+      return { regions, contours, numbers };
+    }
+
+    function simplifyRegions(data, tolerance) {
+      const simplifiedContours = data.contours.map(region => {
+        const simplifiedPaths = region.paths.map(path => simplifyPath(path, tolerance));
+        return { label: region.label, paths: simplifiedPaths };
+      });
+      const numbers = data.numbers;
+      return { regions: data.regions, contours: simplifiedContours, numbers };
+    }
+
+    function buildContour(region, labels, width, height) {
+      const edgesMap = new Map();
+      for (const idx of region.pixels) {
+        const x = idx % width;
+        const y = (idx / width) | 0;
+        const currentLabel = labels[idx];
+        const topDifferent = (y === 0) || labels[idx - width] !== currentLabel;
+        const bottomDifferent = (y === height - 1) || labels[idx + width] !== currentLabel;
+        const leftDifferent = (x === 0) || labels[idx - 1] !== currentLabel;
+        const rightDifferent = (x === width - 1) || labels[idx + 1] !== currentLabel;
+        if (topDifferent) addEdge(edgesMap, x, y, x + 1, y);
+        if (rightDifferent) addEdge(edgesMap, x + 1, y, x + 1, y + 1);
+        if (bottomDifferent) addEdge(edgesMap, x + 1, y + 1, x, y + 1);
+        if (leftDifferent) addEdge(edgesMap, x, y + 1, x, y);
+      }
+      const paths = [];
+      const map = new Map();
+      for (const [key, value] of edgesMap.entries()) {
+        const startKey = pointKey(value.start[0], value.start[1]);
+        if (!map.has(startKey)) map.set(startKey, []);
+        map.get(startKey).push(value);
+      }
+      const used = new Set();
+      for (const edge of edgesMap.values()) {
+        if (used.has(edge.id)) continue;
+        const path = [];
+        let current = edge;
+        while (current && !used.has(current.id)) {
+          used.add(current.id);
+          path.push(current.start);
+          const nextKey = pointKey(current.end[0], current.end[1]);
+          const options = map.get(nextKey) || [];
+          current = options.find(e => !used.has(e.id));
+        }
+        if (path.length > 1) {
+          path.push(path[0]);
+          paths.push(path.map(p => [p[0], p[1]]));
+        }
+      }
+      return paths;
+    }
+
+    function addEdge(map, x1, y1, x2, y2) {
+      const key = edgeKey(x1, y1, x2, y2);
+      if (map.has(key)) return;
+      map.set(key, { id: key, start: [x1, y1], end: [x2, y2] });
+    }
+
+    function edgeKey(x1, y1, x2, y2) {
+      return `${x1},${y1},${x2},${y2}`;
+    }
+
+    function pointKey(x, y) {
+      return `${x},${y}`;
+    }
+
+    function computeCentroid(region, width, height) {
+      let sumX = 0, sumY = 0;
+      const count = region.pixels.length;
+      for (const idx of region.pixels) {
+        const x = idx % width + 0.5;
+        const y = (idx / width) | 0;
+        sumX += x;
+        sumY += y + 0.5;
+      }
+      const centroid = [sumX / count, sumY / count];
+      return { centroid, area: count };
+    }
+
+    function simplifyPath(points, tolerance) {
+      if (points.length <= 2) return points;
+      const sqTolerance = tolerance * tolerance;
+      const result = [points[0]];
+      simplifyDP(points, 0, points.length - 1, sqTolerance, result);
+      result.push(points[points.length - 1]);
+      return result;
+    }
+
+    function simplifyDP(points, first, last, sqTolerance, result) {
+      let index = 0;
+      let maxSqDist = 0;
+      const p1 = points[first];
+      const p2 = points[last];
+      for (let i = first + 1; i < last; i++) {
+        const sqDist = getSqSegDist(points[i], p1, p2);
+        if (sqDist > maxSqDist) {
+          index = i;
+          maxSqDist = sqDist;
+        }
+      }
+      if (maxSqDist > sqTolerance) {
+        if (index - first > 1) simplifyDP(points, first, index, sqTolerance, result);
+        result.push(points[index]);
+        if (last - index > 1) simplifyDP(points, index, last, sqTolerance, result);
+      }
+    }
+
+    function getSqSegDist(p, p1, p2) {
+      let x = p1[0], y = p1[1];
+      let dx = p2[0] - x;
+      let dy = p2[1] - y;
+      if (dx !== 0 || dy !== 0) {
+        const t = ((p[0] - x) * dx + (p[1] - y) * dy) / (dx * dx + dy * dy);
+        if (t > 1) {
+          x = p2[0];
+          y = p2[1];
+        } else if (t > 0) {
+          x += dx * t;
+          y += dy * t;
+        }
+      }
+      dx = p[0] - x;
+      dy = p[1] - y;
+      return dx * dx + dy * dy;
+    }
+
+    function finalizeCentroids(labData, assignments, k) {
+      const totals = new Array(k).fill(0).map(() => ({ lab:[0,0,0], rgb:[0,0,0], count:0 }));
+      for (let i = 0, j = 0; i < assignments.length; i++, j += 3) {
+        const cluster = totals[assignments[i]];
+        cluster.lab[0] += labData[j];
+        cluster.lab[1] += labData[j + 1];
+        cluster.lab[2] += labData[j + 2];
+        cluster.count++;
+      }
+      for (const cluster of totals) {
+        cluster.lab[0] /= cluster.count;
+        cluster.lab[1] /= cluster.count;
+        cluster.lab[2] /= cluster.count;
+        const rgb = labToRgb(cluster.lab[0], cluster.lab[1], cluster.lab[2]);
+        cluster.rgb = rgb;
+      }
+      return totals;
+    }
+
+    function assignAll(labData, centroids, assignments) {
+      const k = centroids.length / 3;
+      for (let i = 0, j = 0; i < assignments.length; i++, j += 3) {
+        let best = 0;
+        let bestDist = Infinity;
+        for (let c = 0, idx = 0; c < k; c++, idx += 3) {
+          const dL = labData[j] - centroids[idx];
+          const da = labData[j + 1] - centroids[idx + 1];
+          const db = labData[j + 2] - centroids[idx + 2];
+          const dist = dL * dL + da * da + db * db;
+          if (dist < bestDist) {
+            bestDist = dist;
+            best = c;
+          }
+        }
+        assignments[i] = best;
+      }
+    }
+
+    function initKMeansPlus(samples, k) {
+      const centers = new Float32Array(k * 3);
+      const n = samples.length / 3;
+      const firstIndex = Math.floor(Math.random() * n);
+      centers.set(samples.slice(firstIndex * 3, firstIndex * 3 + 3), 0);
+      const distances = new Float64Array(n);
+      distances.fill(Infinity);
+      for (let c = 1; c < k; c++) {
+        let total = 0;
+        for (let i = 0, idx = 0; i < n; i++, idx += 3) {
+          const dL = samples[idx] - centers[(c - 1) * 3];
+          const da = samples[idx + 1] - centers[(c - 1) * 3 + 1];
+          const db = samples[idx + 2] - centers[(c - 1) * 3 + 2];
+          const dist = dL * dL + da * da + db * db;
+          if (dist < distances[i]) distances[i] = dist;
+          total += distances[i];
+        }
+        let r = Math.random() * total;
+        let chosen = 0;
+        for (let i = 0; i < n; i++) {
+          r -= distances[i];
+          if (r <= 0) { chosen = i; break; }
+        }
+        centers.set(samples.slice(chosen * 3, chosen * 3 + 3), c * 3);
+      }
+      return centers;
+    }
+
+    function runKMeans(samples, centroids, assignments, iterations) {
+      const k = centroids.length / 3;
+      const n = samples.length / 3;
+      const counts = new Float32Array(k);
+      for (let iter = 0; iter < iterations; iter++) {
+        counts.fill(0);
+        for (let c = 0; c < centroids.length; c++) centroids[c] = 0;
+        for (let i = 0, idx = 0; i < n; i++, idx += 3) {
+          let best = 0;
+          let bestDist = Infinity;
+          for (let c = 0, cidx = 0; c < k; c++, cidx += 3) {
+            const dL = samples[idx] - centroids[cidx];
+            const da = samples[idx + 1] - centroids[cidx + 1];
+            const db = samples[idx + 2] - centroids[cidx + 2];
+            const dist = dL * dL + da * da + db * db;
+            if (dist < bestDist) {
+              bestDist = dist;
+              best = c;
+            }
+          }
+          assignments[i] = best;
+          const base = best * 3;
+          centroids[base] += samples[idx];
+          centroids[base + 1] += samples[idx + 1];
+          centroids[base + 2] += samples[idx + 2];
+          counts[best]++;
+        }
+        for (let c = 0, idx = 0; c < k; c++, idx += 3) {
+          if (counts[c] === 0) continue;
+          centroids[idx] /= counts[c];
+          centroids[idx + 1] /= counts[c];
+          centroids[idx + 2] /= counts[c];
+        }
+      }
+    }
+
+    function deltaE(lab1, lab2) {
+      const dL = lab1[0] - lab2[0];
+      const da = lab1[1] - lab2[1];
+      const db = lab1[2] - lab2[2];
+      return Math.sqrt(dL * dL + da * da + db * db);
+    }
+
+    function rgbToLab(r, g, b) {
+      const toLinear = v => v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+      const R = toLinear(r);
+      const G = toLinear(g);
+      const B = toLinear(b);
+      const X = R * 0.4124 + G * 0.3576 + B * 0.1805;
+      const Y = R * 0.2126 + G * 0.7152 + B * 0.0722;
+      const Z = R * 0.0193 + G * 0.1192 + B * 0.9505;
+      const refX = 0.95047;
+      const refY = 1.00000;
+      const refZ = 1.08883;
+      const fx = f(X / refX);
+      const fy = f(Y / refY);
+      const fz = f(Z / refZ);
+      return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
+    }
+
+    function f(t) {
+      return t > 0.008856 ? Math.cbrt(t) : (7.787 * t) + 16 / 116;
+    }
+
+    function labToRgb(L, a, b) {
+      const y = (L + 16) / 116;
+      const x = a / 500 + y;
+      const z = y - b / 200;
+      const X = 0.95047 * invf(x);
+      const Y = 1.00000 * invf(y);
+      const Z = 1.08883 * invf(z);
+      let r = X * 3.2406 + Y * -1.5372 + Z * -0.4986;
+      let g = X * -0.9689 + Y * 1.8758 + Z * 0.0415;
+      let b = X * 0.0557 + Y * -0.2040 + Z * 1.0570;
+      const toSrgb = v => v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1/2.4) - 0.055;
+      r = Math.min(255, Math.max(0, Math.round(toSrgb(r) * 255)));
+      g = Math.min(255, Math.max(0, Math.round(toSrgb(g) * 255)));
+      b = Math.min(255, Math.max(0, Math.round(toSrgb(b) * 255)));
+      return [r, g, b];
+    }
+
+    function invf(t) {
+      const cube = t * t * t;
+      return cube > 0.008856 ? cube : (t - 16 / 116) / 7.787;
+    }
+    `;
+    const blob = new Blob([workerCode], { type: 'application/javascript' });
+    return new Worker(URL.createObjectURL(blob));
+  }
+  function rgbaFromImage(img) {
+    const maxDim = 3000;
+    const ratio = Math.min(1, maxDim / Math.max(img.width, img.height));
+    const width = Math.round(img.width * ratio);
+    const height = Math.round(img.height * ratio);
+    offscreen.width = width;
+    offscreen.height = height;
+    offctx.drawImage(img, 0, 0, width, height);
+    const imageData = offctx.getImageData(0, 0, width, height);
+    return { width, height, data: new Uint8ClampedArray(imageData.data) };
+  }
+
+  function setStatus(text, isError=false) {
+    elements.statusText.textContent = text;
+    elements.statusText.classList.toggle('error', isError);
+  }
+
+  function updatePreview(payload) {
+    const canvas = elements.previewCanvas;
+    const ctx = previewCtx;
+    const contours = payload.contours;
+    const numbers = payload.numbers;
+    const palette = payload.palette;
+    const stats = payload.stats;
+    if (!state.scaledWidth || !state.scaledHeight) {
+      elements.previewMeta.textContent = 'Sin datos.';
+      return;
+    }
+    const width = canvas.width = 900;
+    const height = canvas.height = Math.max(1, Math.round(900 * state.scaledHeight / state.scaledWidth));
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,width,height);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0,0,width,height);
+    const stroke = getStrokeColor();
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = getStrokePx();
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    const scaleX = width / state.scaledWidth;
+    const scaleY = height / state.scaledHeight;
+    ctx.save();
+    ctx.translate(0.5,0.5);
+    contours.forEach(function(region){
+      region.paths.forEach(function(path){
+        if (path.length < 2) return;
+        ctx.beginPath();
+        ctx.moveTo(path[0][0] * scaleX, path[0][1] * scaleY);
+        for (let i = 1; i < path.length; i++) {
+          ctx.lineTo(path[i][0] * scaleX, path[i][1] * scaleY);
+        }
+        ctx.stroke();
+      });
+    });
+    const fontPt = parseInt(elements.fontSizeInput.value, 10) / 10;
+    const dpi = parseInt(elements.dpiInput.value, 10);
+    const fontPx = fontPt * dpi / 72;
+    numbers.forEach(function(num){
+      const value = num.label + 1;
+      ctx.save();
+      ctx.translate(num.position[0] * scaleX, num.position[1] * scaleY);
+      drawNumberPaths(ctx, value, fontPx, stroke);
+      ctx.restore();
+    });
+    ctx.restore();
+    elements.previewMeta.textContent = stats.width + '×' + stats.height + ' px · ' + palette.length + ' colores · ' + stats.regions + ' regiones';
+    renderPalette(palette);
+  }
+
+  function renderPalette(palette) {
+    const container = elements.palettePreview;
+    container.innerHTML = '';
+    palette.forEach(function(entry, idx){
+      const item = document.createElement('div');
+      item.className = 'palette-item';
+      const swatch = document.createElement('div');
+      swatch.className = 'palette-swatch';
+      swatch.style.background = rgbToHex(entry.rgb);
+      const label = document.createElement('div');
+      label.className = 'palette-label';
+      label.textContent = '#' + (idx + 1);
+      item.appendChild(swatch);
+      item.appendChild(label);
+      container.appendChild(item);
+    });
+  }
+
+  function drawNumberPaths(ctx, value, fontPx, color) {
+    const paths = numberToPaths(value);
+    const strokeWidth = getStrokePx();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = strokeWidth;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    const scale = fontPx;
+    const totalWidth = paths.totalWidth * scale;
+    ctx.translate(-totalWidth/2, -0.5 * scale);
+    paths.paths.forEach(function(p){
+      ctx.beginPath();
+      ctx.moveTo(p[0][0] * scale, p[0][1] * scale);
+      for (let i = 1; i < p.length; i++) {
+        ctx.lineTo(p[i][0] * scale, p[i][1] * scale);
+      }
+      ctx.stroke();
+    });
+  }
+
+  function numberToPaths(number) {
+    const digits = number.toString().split('').map(function(d){ return digitShapes[d]; });
+    const paths = [];
+    let cursor = 0;
+    digits.forEach(function(digit){
+      const dx = cursor;
+      digit.paths.forEach(function(path){
+        paths.push(path.map(function(pt){ return [pt[0] + dx, pt[1]]; }));
+      });
+      cursor += digit.width + 0.2;
+    });
+    return { totalWidth: cursor - 0.2, paths: paths };
+  }
+
+  const digitShapes = createDigitShapes();
+
+  function createDigitShapes() {
+    const digits = {};
+    const base = {
+      0: { width: 0.8, cmds: [[0.1,0.1],[0.7,0.1],[0.7,1],[0.1,1],[0.1,0.1]] },
+      1: { width: 0.5, cmds: [[0.25,0.1],[0.25,1]] },
+      2: { width: 0.8, cmds: [[0.1,0.2],[0.4,0.1],[0.7,0.2],[0.7,0.45],[0.1,0.95],[0.7,0.95]] },
+      3: { width: 0.8, cmds: [[0.1,0.2],[0.45,0.1],[0.7,0.3],[0.45,0.5],[0.7,0.7],[0.45,0.9],[0.1,0.8]] },
+      4: { width: 0.8, cmds: [[0.7,0.2],[0.7,1],[0.7,0.2],[0.1,0.6],[0.8,0.6]] },
+      5: { width: 0.8, cmds: [[0.7,0.1],[0.2,0.1],[0.2,0.45],[0.6,0.45],[0.7,0.55],[0.6,0.85],[0.2,0.9]] },
+      6: { width: 0.8, cmds: [[0.7,0.2],[0.4,0.1],[0.2,0.4],[0.2,0.8],[0.45,0.9],[0.7,0.75],[0.45,0.55],[0.2,0.6]] },
+      7: { width: 0.8, cmds: [[0.1,0.2],[0.7,0.2],[0.3,1]] },
+      8: { width: 0.8, cmds: [[0.4,0.5],[0.1,0.25],[0.4,0.1],[0.7,0.25],[0.4,0.5],[0.7,0.75],[0.4,0.9],[0.1,0.75],[0.4,0.5]] },
+      9: { width: 0.8, cmds: [[0.2,0.8],[0.5,0.9],[0.7,0.6],[0.7,0.25],[0.4,0.1],[0.2,0.4],[0.45,0.6],[0.7,0.55]] }
+    };
+    Object.keys(base).forEach(function(key){
+      digits[key] = {
+        width: base[key].width,
+        paths: [base[key].cmds.map(function(pt){ return [pt[0], pt[1]]; })]
+      };
+    });
+    return digits;
+  }
+  function rgbToHex(rgb) {
+    const r = rgb[0].toString(16).padStart(2,'0');
+    const g = rgb[1].toString(16).padStart(2,'0');
+    const b = rgb[2].toString(16).padStart(2,'0');
+    return '#' + r + g + b;
+  }
+
+  function getStrokeColor() {
+    const hex = elements.strokeHex.value.trim();
+    if (/^#([0-9a-fA-F]{6})$/.test(hex)) {
+      return hex;
+    }
+    const gray = parseInt(elements.strokeGray.value, 10);
+    const value = Math.round((100 - gray) / 100 * 255);
+    const hexComponent = value.toString(16).padStart(2,'0');
+    return '#' + hexComponent + hexComponent + hexComponent;
+  }
+
+  function getStrokePx() {
+    const pt = parseInt(elements.thicknessSlider.value, 10) / 100;
+    const dpi = parseInt(elements.dpiInput.value, 10);
+    return pt * dpi / 72;
+  }
+
+  function refreshHexFromGray() {
+    const gray = parseInt(elements.strokeGray.value, 10);
+    const value = Math.round((100 - gray) / 100 * 255);
+    const hexComponent = value.toString(16).padStart(2,'0');
+    elements.strokeHex.value = '#' + hexComponent + hexComponent + hexComponent;
+  }
+
+  function refreshGrayFromHex() {
+    const hex = elements.strokeHex.value.trim();
+    if (/^#([0-9a-fA-F]{6})$/.test(hex)) {
+      const val = parseInt(hex.slice(1,3),16);
+      const gray = Math.round(100 - (val / 255) * 100);
+      elements.strokeGray.value = gray;
+      elements.strokeGrayValue.textContent = 'Gris ' + gray + '%';
+    }
+  }
+
+  function processCurrentImage() {
+    if (!state.imageData) return;
+    if (state.processing) return;
+    state.processing = true;
+    state.processed = null;
+    elements.exportSvg.disabled = true;
+    elements.exportPng.disabled = true;
+    elements.exportPalettePdf.disabled = true;
+    elements.exportPaletteSvg.disabled = true;
+    elements.previewMeta.textContent = 'Procesando…';
+    setStatus('Procesando…');
+    const payloadRgba = new Uint8ClampedArray(state.imageData);
+    const payload = {
+      width: state.scaledWidth,
+      height: state.scaledHeight,
+      rgba: payloadRgba,
+      options: {
+        detail: parseInt(elements.detailSlider.value, 10)
+      }
+    };
+    try {
+      worker.postMessage({ type: 'process', payload }, [payload.rgba.buffer]);
+    } catch (error) {
+      state.processing = false;
+      setStatus('No se pudo iniciar el procesamiento.', true);
+      console.error('worker:dispatch:error', error);
+    }
+  }
+
+  // Corrección: se agregan respuestas y errores del worker para no dejar la UI bloqueada.
+  worker.addEventListener('message', function(event){
+    const type = event.data.type;
+    const payload = event.data.payload;
+    if (type === 'result') {
+      state.processing = false;
+      setStatus('Listo en ' + payload.elapsed + ' ms');
+      state.processed = payload;
+      updatePreview(payload);
+      elements.exportSvg.disabled = false;
+      elements.exportPng.disabled = false;
+      elements.exportPalettePdf.disabled = false;
+      elements.exportPaletteSvg.disabled = false;
+      console.log('worker:result', { elapsed: payload.elapsed, colors: payload.palette.length, regions: payload.stats.regions });
+    } else if (type === 'error') {
+      state.processing = false;
+      setStatus('Error al procesar la imagen: ' + (payload && payload.message ? payload.message : 'desconocido'), true);
+      elements.previewMeta.textContent = 'Error en el procesamiento.';
+      previewCtx.clearRect(0, 0, elements.previewCanvas.width, elements.previewCanvas.height);
+      elements.palettePreview.innerHTML = '';
+      console.error('worker:error', payload);
+    }
+  });
+
+  worker.addEventListener('error', function(event){
+    state.processing = false;
+    setStatus('Ocurrió un error interno en el procesamiento.', true);
+    elements.previewMeta.textContent = 'Error en el procesamiento.';
+    previewCtx.clearRect(0, 0, elements.previewCanvas.width, elements.previewCanvas.height);
+    elements.palettePreview.innerHTML = '';
+    console.error('worker:fatal', event.error || event.message || event);
+  });
+
+  // Corrección: la carga de archivos ahora normaliza el archivo, genera el bitmap y lanza el pipeline + vista previa.
+  function handleFiles(input) {
+    const files = normalizeFiles(input);
+    if (!files.length) return;
+    const file = files.find(isAcceptedFile);
+    if (!file) {
+      setStatus('Formato no soportado. Usa JPG, PNG o WEBP.', true);
+      showPreviewThumb(null);
+      updateImageInfoText(null);
+      return;
+    }
+    setStatus('Cargando imagen…');
+    state.image = file;
+    state.imageData = null;
+    state.processed = null;
+    state.scaledWidth = 0;
+    state.scaledHeight = 0;
+    elements.palettePreview.innerHTML = '';
+    elements.exportSvg.disabled = true;
+    elements.exportPng.disabled = true;
+    elements.exportPalettePdf.disabled = true;
+    elements.exportPaletteSvg.disabled = true;
+    elements.previewMeta.textContent = 'Preparando…';
+    updateImageInfoText(file);
+    const reader = new FileReader();
+    reader.onload = function(){
+      showPreviewThumb(reader.result, file);
+      const img = new Image();
+      img.onload = function(){
+        state.originalWidth = img.width;
+        state.originalHeight = img.height;
+        const processed = rgbaFromImage(img);
+        state.scaledWidth = processed.width;
+        state.scaledHeight = processed.height;
+        state.imageData = processed.data;
+        const dims = img.width + '×' + img.height + ' px (procesada a ' + processed.width + '×' + processed.height + ' px)';
+        updateImageInfoText(file, dims);
+        elements.previewMeta.textContent = 'Reprocesando…';
+        console.log('image:loaded', { originalWidth: img.width, originalHeight: img.height, scaledWidth: processed.width, scaledHeight: processed.height });
+        processCurrentImage();
+      };
+      img.onerror = function(){
+        setStatus('No se pudo leer la imagen seleccionada.', true);
+        showPreviewThumb(null);
+        updateImageInfoText(null);
+      };
+      img.src = reader.result;
+    };
+    reader.onerror = function(){
+      setStatus('Error al leer el archivo.', true);
+      showPreviewThumb(null);
+      updateImageInfoText(null);
+    };
+    reader.readAsDataURL(file);
+  }
+  window.handleFiles = handleFiles;
+
+  elements.fileInput.addEventListener('change', function(e){
+    dispatchIncomingFiles(e.target.files);
+    e.target.value = '';
+  });
+
+  // Corrección: se añade fallback showOpenFilePicker para entornos con input bloqueado.
+  elements.selectImage.addEventListener('click', async function(e){
+    const input = elements.fileInput;
+    if (!input) return;
+    e.preventDefault();
+    try {
+      if (typeof input.showPicker === 'function') {
+        await input.showPicker();
+        return;
+      }
+      input.click();
+    } catch (err) {
+      if (typeof window.showOpenFilePicker === 'function') {
+        try {
+          const handles = await window.showOpenFilePicker({
+            multiple: false,
+            types: [{
+              description: 'Imágenes',
+              accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.webp'] }
+            }]
+          });
+          if (handles && handles.length) {
+            const file = await handles[0].getFile();
+            dispatchIncomingFiles([file]);
+          }
+        } catch (pickerError) {
+          if (pickerError && pickerError.name !== 'AbortError') {
+            setStatus('No se pudo abrir el selector de archivos.', true);
+          }
+        }
+      }
+    }
+  });
+
+  let dragDepth = 0;
+  elements.dropZone.addEventListener('dragenter', function(e){
+    e.preventDefault();
+    dragDepth++;
+    elements.dropZone.classList.add('dragover');
+  });
+  elements.dropZone.addEventListener('dragover', function(e){
+    e.preventDefault();
+  });
+  elements.dropZone.addEventListener('dragleave', function(e){
+    e.preventDefault();
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (dragDepth === 0) {
+      elements.dropZone.classList.remove('dragover');
+    }
+  });
+  elements.dropZone.addEventListener('drop', function(e){
+    e.preventDefault();
+    dragDepth = 0;
+    elements.dropZone.classList.remove('dragover');
+    const dt = e.dataTransfer;
+    if (!dt) return;
+    if (dt.items && dt.items.length) {
+      const dropped = [];
+      for (const item of dt.items) {
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          if (file) dropped.push(file);
+        }
+      }
+      dispatchIncomingFiles(dropped);
+    } else {
+      dispatchIncomingFiles(dt.files);
+    }
+  });
+  elements.dropZone.addEventListener('dragend', function(){
+    dragDepth = 0;
+    elements.dropZone.classList.remove('dragover');
+  });
+
+  window.addEventListener('paste', function(e){
+    const active = document.activeElement;
+    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) {
+      return;
+    }
+    const clipboard = e.clipboardData;
+    if (!clipboard) return;
+    const files = [];
+    if (clipboard.files && clipboard.files.length) {
+      for (const file of clipboard.files) {
+        if (file) files.push(file);
+      }
+    } else if (clipboard.items && clipboard.items.length) {
+      for (const item of clipboard.items) {
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          if (file) files.push(file);
+        }
+      }
+    }
+    if (files.length) {
+      dispatchIncomingFiles(files);
+    }
+  });
+
+  elements.detailSlider.addEventListener('input', function(){
+    elements.detailValue.textContent = 'Detalle: ' + elements.detailSlider.value;
+  });
+  elements.detailSlider.addEventListener('change', processCurrentImage);
+
+  elements.thicknessSlider.addEventListener('input', function(){
+    const pt = (parseInt(elements.thicknessSlider.value, 10) / 100).toFixed(2);
+    elements.thicknessValue.textContent = pt + ' pt';
+    if (state.processed) updatePreview(state.processed);
+  });
+
+  elements.strokeGray.addEventListener('input', function(){
+    const value = parseInt(elements.strokeGray.value, 10);
+    elements.strokeGrayValue.textContent = 'Gris ' + value + '%';
+    refreshHexFromGray();
+    if (state.processed) updatePreview(state.processed);
+  });
+
+  elements.strokeHex.addEventListener('change', function(){
+    if (!/^#([0-9a-fA-F]{6})$/.test(elements.strokeHex.value.trim())) {
+      refreshHexFromGray();
+      return;
+    }
+    refreshGrayFromHex();
+    if (state.processed) updatePreview(state.processed);
+  });
+
+  elements.fontSizeInput.addEventListener('input', function(){
+    const pt = (parseInt(elements.fontSizeInput.value, 10) / 10).toFixed(2);
+    elements.fontSizeValue.textContent = pt + ' pt';
+    if (state.processed) updatePreview(state.processed);
+  });
+
+  function validateExportSize() {
+    const width = parseFloat(elements.widthCm.value);
+    const height = parseFloat(elements.heightCm.value);
+    const top = parseFloat(elements.marginTop.value);
+    const right = parseFloat(elements.marginRight.value);
+    const bottom = parseFloat(elements.marginBottom.value);
+    const left = parseFloat(elements.marginLeft.value);
+    if ([width,height,top,right,bottom,left].some(function(v){ return !isFinite(v) || v < 0; })) {
+      elements.exportStatus.textContent = 'Revisa los tamaños. Deben ser números válidos.';
+      return null;
+    }
+    if (top + bottom >= height || left + right >= width) {
+      elements.exportStatus.textContent = 'Los márgenes son demasiado grandes para el tamaño indicado.';
+      return null;
+    }
+    elements.exportStatus.textContent = 'Listo para exportar.';
+    return { width: width, height: height, top: top, right: right, bottom: bottom, left: left };
+  }
+
+  elements.exportSvg.addEventListener('click', function(){ exportImage('svg'); });
+  elements.exportPng.addEventListener('click', function(){ exportImage('png'); });
+  elements.exportPaletteSvg.addEventListener('click', function(){ exportPalette('svg'); });
+  elements.exportPalettePdf.addEventListener('click', function(){ exportPalette('pdf'); });
+
+  // Corrección: exportación SVG/PNG con logs y validación de errores.
+  function exportImage(format) {
+    if (!state.processed) return;
+    const sizes = validateExportSize();
+    if (!sizes) return;
+    const dpi = parseInt(elements.dpiInput.value, 10);
+    console.log('export:start', { format: format, widthCm: sizes.width, heightCm: sizes.height, dpi: dpi });
+    const svg = buildSvg(state.processed, sizes, dpi);
+    if (format === 'svg') {
+      downloadFile(svg, 'lamina.svg', 'image/svg+xml');
+      console.log('export:done', { format: 'svg' });
+    } else {
+      const canvas = document.createElement('canvas');
+      const pixelWidth = Math.round((sizes.width / 2.54) * dpi);
+      const pixelHeight = Math.round((sizes.height / 2.54) * dpi);
+      canvas.width = pixelWidth;
+      canvas.height = pixelHeight;
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      const blob = new Blob([svg], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      img.onload = function(){
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0,0,pixelWidth,pixelHeight);
+        ctx.drawImage(img, 0, 0, pixelWidth, pixelHeight);
+        URL.revokeObjectURL(url);
+        canvas.toBlob(function(b){
+          if (!b) {
+            setStatus('No se pudo generar la imagen PNG.', true);
+            console.error('export:error', 'png');
+            return;
+          }
+          downloadBlob(b, 'lamina.png');
+          console.log('export:done', { format: 'png' });
+        }, 'image/png');
+      };
+      img.onerror = function(){
+        URL.revokeObjectURL(url);
+        setStatus('No se pudo convertir el SVG a PNG.', true);
+        console.error('export:error', 'png-rasterize');
+      };
+      img.src = url;
+    }
+    state.lastExportFormat = format;
+  }
+  function buildSvg(processed, sizes, dpi) {
+    const contours = processed.contours;
+    const numbers = processed.numbers;
+    const palette = processed.palette;
+    const stroke = getStrokeColor();
+    const strokePt = parseInt(elements.thicknessSlider.value, 10) / 100;
+    const fontPt = parseInt(elements.fontSizeInput.value, 10) / 10;
+    const pxPerCm = dpi / 2.54;
+    const widthPx = sizes.width * pxPerCm;
+    const heightPx = sizes.height * pxPerCm;
+    const innerWidth = (sizes.width - sizes.left - sizes.right) * pxPerCm;
+    const innerHeight = (sizes.height - sizes.top - sizes.bottom) * pxPerCm;
+    const scale = Math.min(innerWidth / state.scaledWidth, innerHeight / state.scaledHeight);
+    const offsetX = sizes.left * pxPerCm + (innerWidth - state.scaledWidth * scale) / 2;
+    const offsetY = sizes.top * pxPerCm + (innerHeight - state.scaledHeight * scale) / 2;
+    const digits = createDigitShapes();
+    const defs = Object.keys(digits).map(function(key){
+      const def = digits[key];
+      const path = def.paths.map(function(p){
+        return 'M' + p.map(function(pt){ return pt[0] + ' ' + pt[1]; }).join('L');
+      }).join('');
+      return '<g id="d' + key + '" data-width="' + def.width + '">' + path + '</g>';
+    }).join('');
+    const contourPaths = contours.map(function(region){
+      const d = region.paths.map(function(path){
+        return 'M' + path.map(function(pt){
+          const x = pt[0] * scale + offsetX;
+          const y = pt[1] * scale + offsetY;
+          return x + ' ' + y;
+        }).join('L');
+      }).join('');
+      return '<path d="' + d + '" fill="none" stroke="' + stroke + '" stroke-width="' + strokePt + 'pt" stroke-linejoin="round" stroke-linecap="round"/>';
+    }).join('');
+    const numberGroups = numbers.map(function(num){
+      const value = num.label + 1;
+      return buildNumberSvg(value, digits, offsetX + num.position[0] * scale, offsetY + num.position[1] * scale, fontPt, stroke);
+    }).join('');
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="' + sizes.width + 'cm" height="' + sizes.height + 'cm" viewBox="0 0 ' + widthPx + ' ' + heightPx + '" preserveAspectRatio="xMidYMid meet"><defs>' + defs + '</defs><rect width="100%" height="100%" fill="#ffffff"/>' + contourPaths + numberGroups + '</svg>';
+  }
+
+  function buildNumberSvg(value, digitDefs, cx, cy, fontPt, stroke) {
+    const chars = value.toString().split('');
+    let totalWidth = -0.2;
+    chars.forEach(function(ch){ totalWidth += digitDefs[ch].width + 0.2; });
+    const scale = fontPt;
+    const translateX = cx - (totalWidth * scale) / 2;
+    const translateY = cy - 0.5 * scale;
+    let offset = 0;
+    const strokePt = parseInt(elements.thicknessSlider.value,10) / 100;
+    const parts = [];
+    chars.forEach(function(ch){
+      const def = digitDefs[ch];
+      def.paths.forEach(function(path){
+        const segments = path.map(function(pt, index){
+          const prefix = index === 0 ? 'M' : 'L';
+          const x = (pt[0] + offset) * scale + translateX;
+          const y = pt[1] * scale + translateY;
+          return prefix + x + ',' + y;
+        }).join('');
+        parts.push('<path d="' + segments + '" fill="none" stroke="' + stroke + '" stroke-width="' + strokePt + 'pt" stroke-linejoin="round" stroke-linecap="round"/>');
+      });
+      offset += def.width + 0.2;
+    });
+    return parts.join('');
+  }
+
+  function downloadFile(text, filename, type) {
+    const blob = new Blob([text], { type: type });
+    downloadBlob(blob, filename);
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  }
+
+  // Corrección: exportación de paleta robusta con feedback y fallback.
+  function exportPalette(format) {
+    if (!state.processed) return;
+    const palette = state.processed.palette;
+    console.log('export:start', { format: 'palette-' + format, colors: palette.length });
+    if (format === 'svg') {
+      const svg = buildPaletteSvg(palette);
+      downloadFile(svg, 'paleta.svg', 'image/svg+xml');
+      console.log('export:done', { format: 'palette-svg' });
+    } else {
+      const win = window.open('', '_blank');
+      if (!win) {
+        setStatus('No se pudo abrir la ventana de impresión.', true);
+        console.error('export:error', 'palette-pdf-window');
+        return;
+      }
+      win.document.write(buildPaletteHtml(palette));
+      win.document.close();
+      setTimeout(function(){
+        win.print();
+        console.log('export:done', { format: 'palette-pdf' });
+      }, 250);
+    }
+  }
+
+  function buildPaletteSvg(palette) {
+    const pageWidth = 21;
+    const pageHeight = 29.7;
+    const margin = 1;
+    const cols = 4;
+    const usableWidth = pageWidth - margin * 2;
+    const usableHeight = pageHeight - margin * 2;
+    let cellSize = 2;
+    const rows = Math.ceil(palette.length / cols);
+    const maxRows = Math.floor(usableHeight / cellSize);
+    if (rows > maxRows) {
+      cellSize = usableHeight / rows;
+    }
+    const pxPerCm = 96 / 2.54;
+    const widthPx = pageWidth * pxPerCm;
+    const heightPx = pageHeight * pxPerCm;
+    const stroke = getStrokeColor();
+    const fontPt = parseInt(elements.fontSizeInput.value, 10) / 10;
+    let content = '';
+    palette.forEach(function(entry, idx){
+      const col = idx % cols;
+      const row = Math.floor(idx / cols);
+      const x = margin + col * cellSize;
+      const y = margin + row * cellSize;
+      const fill = rgbToHex(entry.rgb);
+      const textColor = isDark(entry.rgb) ? '#ffffff' : stroke;
+      content += '<rect x="' + x + 'cm" y="' + y + 'cm" width="' + cellSize + 'cm" height="' + cellSize + 'cm" fill="' + fill + '" stroke="#333" stroke-width="0.02cm" rx="0.12cm"/>';
+      content += buildPaletteNumber(idx + 1, x + cellSize/2, y + cellSize/2, fontPt, textColor);
+    });
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="' + pageWidth + 'cm" height="' + pageHeight + 'cm" viewBox="0 0 ' + widthPx + ' ' + heightPx + '"><rect width="100%" height="100%" fill="#ffffff"/>' + content + '</svg>';
+  }
+
+  function buildPaletteNumber(value, cx, cy, fontPt, stroke) {
+    const digits = createDigitShapes();
+    const chars = value.toString().split('');
+    let totalWidth = -0.2;
+    chars.forEach(function(ch){ totalWidth += digits[ch].width + 0.2; });
+    const scale = fontPt;
+    const translateX = cx - totalWidth * scale / 2;
+    const translateY = cy - 0.5 * scale;
+    let offset = 0;
+    const strokePt = parseInt(elements.thicknessSlider.value,10) / 100;
+    const parts = [];
+    chars.forEach(function(ch){
+      const def = digits[ch];
+      def.paths.forEach(function(path){
+        const d = path.map(function(pt, index){
+          const prefix = index === 0 ? 'M' : 'L';
+          const x = (pt[0] + offset) * scale + translateX;
+          const y = pt[1] * scale + translateY;
+          return prefix + x + ' ' + y;
+        }).join('');
+        parts.push('<path d="' + d + '" fill="none" stroke="' + stroke + '" stroke-width="' + strokePt + 'pt" stroke-linejoin="round" stroke-linecap="round"/>');
+      });
+      offset += def.width + 0.2;
+    });
+    return parts.join('');
+  }
+
+  function buildPaletteHtml(palette) {
+    const svg = buildPaletteSvg(palette);
+    return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Paleta</title><style>@page { size: A4 portrait; margin: 1cm; } body { margin:0; } svg { width: 100%; height: auto; }</style></head><body>' + svg + '</body></html>';
+  }
+
+  function isDark(rgb) {
+    return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2] < 96;
+  }
+
+  document.addEventListener('keydown', function(event){
+    const key = event.key.toLowerCase();
+    if ((event.ctrlKey || event.metaKey) && key === 's') {
+      event.preventDefault();
+      if (!state.processed) return;
+      exportImage(state.lastExportFormat || 'svg');
+    }
+    if (key === 'r' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      event.preventDefault();
+      processCurrentImage();
+    }
+  });
+})();
+</script>
+</body>
+</html>
